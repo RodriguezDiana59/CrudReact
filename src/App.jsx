@@ -1,55 +1,72 @@
 import React from 'react';
-import shortid from 'shortid';
-
+//import shortid from 'shortid';
+import axios from 'axios';
 function App() {
    
+
    const [tarea, setTarea] = React.useState('')
    const [tareas, setTareas] = React.useState([])
    const [modoEdicion,setModoEdicion] = React.useState(false)
    const [id,setId] = React.useState(0)
-   const [mensageError, setMensageError] =React.useState(false)
+   const [mensageError, setMensajeError] =React.useState(false)
 
-   const agregarTarea = e => {
-     e.preventDefault()
-     if (!tarea.trim()) {
-       setMensageError(true)
-       return
-     }
-     setTareas([
-       ...tareas,
-       { id:shortid.generate(), nombreTarea:tarea }
-     ])
-     setTarea("")
-     setMensageError(false)
- 
+  React.useEffect(() => {
+    actualizarTareas();
+  }, [])
+
+  const actualizarTareas = async () => {
+    let lastareas = await axios.get(`http://localhost:3001/tarea`);
+      setTareas(lastareas.data);
+  }
+
+   const agregarTarea = async e => {
+     e.preventDefault();
+      try {
+        if (!tarea.trim()) {
+          setMensajeError(true);
+          return
+        }
+        await axios.post(`http://localhost:3001/tarea`, { nombreTarea: tarea });
+        console.log("Success");
+        setTarea("");
+        actualizarTareas();
+        setMensajeError(false);
+      } catch (error) {
+        console.log(error.message);
+      }    
    }
- 
-   
-   const eliminarTarea = (id) => {
-     console.log(id)
-     const arrayFiltrado = tareas.filter(item => item.id !== id)
-     setTareas(arrayFiltrado)
+
+   const eliminarTarea = async (id) => {
+    try {
+      await axios.delete(`http://localhost:3001/tarea/${id}`,);
+      console.log("success");
+      actualizarTareas();
+    } catch (error) {
+      console.log(error.message);
+    }     
    }
+
    const cambiarEstado = (item) => {
-     setModoEdicion(true)
-     setTarea(item.nombreTarea)
-     setId(item.id)
-
+     setModoEdicion(true);
+     setTarea(item.nombreTarea);
+     setId(item.id);
    }
 
-   const editarTarea = (e) => {
+   const editarTarea = async (e) => {
      e.preventDefault()
-     if (!tarea.trim()) {
-       setMensageError(true);
-       return
+     try {
+      if (!tarea.trim()) {
+        setMensajeError(true);
+        return
+      }
+      await axios.put(`http://localhost:3001/tarea/${id}`, { nombreTarea: tarea});
+      actualizarTareas();     
+      setTarea("");
+      setModoEdicion(false);
+      setMensajeError(false);
+     } catch (error) {
+       console.log(error.message);
      }
-     const arrayEditado = tareas.map(
-       item => item.id === id ? {id: id, nombreTarea:tarea} : item
-     )
-     setTareas(arrayEditado)
-     setTarea("")
-     setModoEdicion(false)
-     setMensageError(false)
    }
   
   return (
@@ -61,8 +78,10 @@ function App() {
           <ul className="list-group">
             {
               tareas.length === 0 ? (
-                <li className="list-group-item">
-                  <span className="lead">No existen tareas</span>
+                <li className="list-group-item none">
+                  <div className="alert alert-success text-center margin-right: 3rem" role="alert">
+                    <span className="lead">No existen tareas agregue nuevas tareas</span>
+                  </div>
                 </li>
               ) :
               (
@@ -91,8 +110,12 @@ function App() {
           <h4 className="text-center"> { modoEdicion ? 'Editar' : 'Registrar' }</h4>
           {
             mensageError ? (
-              <h6 className="text-center text-danger">No se permiten campos vacios</h6>
-            ) : ( <h6></h6> )
+              <div class="alert alert-danger d-flex align-items-center" role="alert">                    
+                    <div>
+                      Este campo<strong> no </strong>puede estar vacio
+                    </div>
+              </div>
+            ) : ( <h6>  </h6> )
           }
           <h4 className="text-center">
 
